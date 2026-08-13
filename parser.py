@@ -1,14 +1,17 @@
 import socket
 
 
-def parse_HTTP_message(socket: socket.socket, buff_size: int) -> str:
+def recive_message(socket: socket.socket, buff_size: int) -> bytes:
+	message = b""
 
-	data = socket.recv(buff_size)
-
-	message = ""
 	while True:
-		if not data: break
-		message += data.decode()
-		if message.endswith("\r\n\r\n"): break
+		data = socket.recv(buff_size)
+
+		if data == b"": break
+		if b"\0" in data:
+			message += data
+			break
+
+		message += data
 
 	return message

@@ -1,6 +1,6 @@
 import socket
 
-from parser import parse_HTTP_message
+from parser import recive_message
 
 if __name__ == "__main__":
 
@@ -19,11 +19,12 @@ if __name__ == "__main__":
 	while True:
 		new_socket, new_socket_address = server_socket.accept()
 
-		recv_message = parse_HTTP_message(new_socket, buff_size)
+		recv_message = recive_message(new_socket, buff_size)
+		print(f' -> Se ha recibido el siguiente mensaje: {recv_message.decode()}')
 
-		print(f' -> Se ha recibido el siguiente mensaje: {recv_message}')
-		response_message = f"Se ha sido recibido con éxito el mensaje:{recv_message}\r\n\r\nignorar"
+		response_message = f"echo: {recv_message.decode()}"
 		new_socket.send(response_message.encode())
+		new_socket.send(b"\0")
 
 		new_socket.close()
 		print(f"conexión con {new_socket_address} ha sido cerrada")
