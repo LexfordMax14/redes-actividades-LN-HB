@@ -1,3 +1,4 @@
+import json
 import socket
 
 from parser import (
@@ -6,6 +7,10 @@ from parser import (
 	parse_HTTP_message,
 	recive_message,
 )
+
+RULES = None
+with open("rules.json") as file:
+	RULES = json.load(file)
 
 if __name__ == "__main__":
 	# IP_VM = '10.0.2.15' # IP de la máquina virtual
