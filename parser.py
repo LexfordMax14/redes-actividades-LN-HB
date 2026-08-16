@@ -1,44 +1,49 @@
 import socket
 
-def parse_HTTP_message(http_message: bytes): 
 
-	# separo head de body 
-	head, body = http_message.split(b"\r\n\r\n", 1) # puede haber un doble salto en el body se asume eso
+class Http_HL:
+	"""Clase Http Hector-Lazaro.
 
-	dict_http = {}
-	dict_head = {}
+	Para que el LSP te hintee mejor."""
 
-	dict_http["body"] = body.decode() # el body se guarda en string
-	dict_http["head"] = dict_head # para mejor acceso a los headers
+	def __init__(
+		self,
+		head: dict[str, str] = {},
+		start_line: str = "",
+		body: str = "",
+	):
+		self.start_line = start_line
+		self.head = head
+		self.body = body
 
-	lineas = head.split(b"\r\n") #separar lineas del head
 
-	dict_head["start_line"] = lineas[0].decode() #la primera linea es la start line
+def parse_HTTP_message(http_message: bytes) -> Http_HL:
+	head, body = http_message.split(b"\r\n\r\n", 1)
 
-	headers = lineas[1:] # el resto son headers
+	http_hl = Http_HL()
+	http_hl.body = body.decode()
 
+	lineas = head.split(b"\r\n")
+	http_hl.start_line = lineas[0].decode()
+
+	headers = lineas[1:]
 	for line in headers:
-		llave,valor = line.split(b": ",1) #par llave valor
-		dict_head[llave.decode()] = valor.decode()
+		# Cuidado con el separador ": ", yo usaria ":" y luego strip()
+		llave, valor = line.split(b": ", 1)
+		http_hl.head[llave.decode()] = valor.decode()
 
-	return dict_http
+	return http_hl
 
-def create_HTTP_message(parse_http: dict):
 
-	#reconstruir la head
-	head = parse_http["head"]["start_line"] + "\r\n" # start line
+def create_HTTP_message(parse_http: Http_HL) -> bytes:
+	head = parse_http.start_line + "\r\n"
+	body = parse_http.body
 
-	for llave, valor in parse_http["head"].items():
-		if llave == "content-length" or llave == "content-type" : # tomo lo importante (la start line esta arriba esto es para los headers)
-			head += f"{llave}: {valor}\r\n"
+	for llave, valor in parse_http.head.items():
+		head += f"{llave}: {valor}\r\n"
 
-	#reconstruir el body
-	body = parse_http["body"]
-
-	#reconstruir el mensaje completo
-	message  = head + "\r\n" + body # unir head y body
-
-	return message.encode() #retornar en bytes
+	message = head + "\r\n" + body
+	return message.encode()
 
 
 def recive_message(socket: socket.socket, buff_size: int) -> bytes:
@@ -47,7 +52,9 @@ def recive_message(socket: socket.socket, buff_size: int) -> bytes:
 	while True:
 		data = socket.recv(buff_size)
 
-		if data == b"": break
+		if data == b"":
+			break
+		# Nuestra convención para el final de un mensaje.
 		if b"\0" in data:
 			message += data
 			break
