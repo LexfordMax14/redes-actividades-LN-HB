@@ -4,14 +4,17 @@ from parser import recive_message
 
 if __name__ == "__main__":
 
-	buff_size = 4
-	address = ('localhost', 5000)
+	IP_VM = '10.0.2.15' # IP de la máquina virtual
+	# IP_VM = '127.0.0.1' # si falla la MV
+
+	buff_size = 4 # tamaño del buffer para recibir el mensaje
+	address = (IP_VM, 5000) # dirección del servidor al que nos queremos conectar
 
 	print('Creando socket - Servidor')
 
-	server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-	server_socket.bind(address)
-	server_socket.listen(3)
+	server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM) #creación del socket TCP del servidor
+	server_socket.bind(address)	#asociación del socket a la dirección y puerto especificados
+	server_socket.listen(3) #máximo de conexiones en cola que puede tener el servidor
 
 	# nos quedamos esperando a que llegue una petición de conexión
 	print('... Esperando clientes')
