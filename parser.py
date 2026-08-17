@@ -32,33 +32,29 @@ class Http_HL:
 
 	def __init__(
 		self,
-		head: dict[str, str] | None = None,
 		start_line: str = "",
-		body: str = "",
+		head: dict[str, str] | None = None,
+		body: str | None = None,
 	):
 		self.start_line = start_line
 		empty_head: dict[str, str] = {}
-		self.head = empty_head if not head else head
+		self.head = empty_head if head == None else head
 		self.body = body
 
 
-def parse_HTTP_message(http_message: bytes) -> Http_HL:
-	message = http_message.split(b"\r\n\r\n", 1)
-
-	# TODO(Hector): puede ser que un mensaje HTTP llegue con BODY o no.
-	# Si llega con BODY, hay que rescatar el HEADER `content-length` para saber
-	# de cuantos bytes es el body, y pegarlo al Http_HL
-	# `curl` no envia un content-length, pero un navegador puede.
-	if len(message) < 2:
-		head = message[0]
-		body = b""
-	else:
-		head = message[0]
-		body = message[1]
-
+def parse_HTTP_message(socket: socket.socket, buff_size: int = 4) -> Http_HL:
 	http_hl = Http_HL()
-	http_hl.body = body.decode()
+	message = b""
+	# Convención de http
+	while b"\r\n\r\n" not in message:
+		data = socket.recv(buff_size)
+		if not data:
+			break
+		message += data
+	message = message.split(b"\r\n\r\n", 1)
+	# Como el buff_size es 4, siempre va a ser una lista de tamaño 1
 
+	head = message[0]
 	lineas = head.split(b"\r\n")
 	http_hl.start_line = lineas[0].decode()
 
@@ -68,30 +64,18 @@ def parse_HTTP_message(http_message: bytes) -> Http_HL:
 		llave, valor = line.split(b": ", 1)
 		http_hl.head[llave.decode()] = valor.decode()
 
+	if "Content-Length" in http_hl.head:
+		data = socket.recv(int(http_hl.head["Content-Length"]))
+		http_hl.body = data.decode()
+
 	return http_hl
 
 
 def create_HTTP_message(parse_http: Http_HL) -> bytes:
 	head = parse_http.start_line + "\r\n"
-	body = parse_http.body
+	body = "" if parse_http.body == None else parse_http.body
 
 	for llave, valor in parse_http.head.items():
 		head += f"{llave}: {valor}\r\n"
 
-	message = head + "\r\n" + body
-	return message.encode()
-
-
-def recive_message(socket: socket.socket, buff_size: int) -> bytes:
-	message = b""
-
-	# Convención de http
-	while b"\r\n\r\n" not in message:
-		data = socket.recv(buff_size)
-
-		if not data:
-			break
-
-		message += data
-
-	return message
+	return (head + "\r\n" + body).encode()
