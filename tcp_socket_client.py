@@ -9,7 +9,7 @@ IP_VM = '10.0.2.15' # IP de la máquina virtual
 # IP_VM = 'localhost' # si falla la MV
 
 #Dirección del servidor al que nos queremos conectar
-address = (IP_VM, 5000)
+address = (IP_VM, 8000)
 #Conexión
 client_socket.connect(address)
 

@@ -2,21 +2,23 @@ import json
 import socket
 
 from parser import (
-	HTTP_RESPONSE,
+	#HTTP_RESPONSE,
 	create_HTTP_message,
 	parse_HTTP_message,
 	recive_message,
 )
 
+''''
 RULES = None
 with open("rules.json") as file:
 	RULES = json.load(file)
+'''
 
 if __name__ == "__main__":
-	# IP_VM = '10.0.2.15' # IP de la máquina virtual
-	IP_VM = "127.0.0.1" # si falla la MV
+	IP_VM = '10.166.246.129' # IP de la máquina virtual
+	#IP_VM = "127.0.0.1" # si falla la MV
 	buff_size = 4
-	address = (IP_VM, 5000)
+	address = (IP_VM, 8000)
 
 	print("Creando socket - Servidor")
 	server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -36,7 +38,7 @@ if __name__ == "__main__":
 			"---"
 		)
 
-		new_socket.send(HTTP_RESPONSE)
+		#new_socket.send(HTTP_RESPONSE)
 
 		new_socket.close()
 		print(f"conexión con {new_socket_address} ha sido cerrada")
