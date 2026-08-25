@@ -1,23 +1,23 @@
 import json
 import socket
 
+from code_errors import HTML_403, IMAGE_403
 from parser import (
-	#HTTP_RESPONSE,
 	create_HTTP_message,
 	parse_HTTP_message,
 	recive_message,
 )
 
-''''
 RULES = None
 with open("rules.json") as file:
 	RULES = json.load(file)
-'''
+USER: str = RULES["user"]
+BLOCKED_DOMAINS: list[str] = RULES["blocked"]
+FORBIDDEN_WORDS: list[dict[str, str]] = RULES["forbidden_words"]
 
 if __name__ == "__main__":
-	IP_VM = '10.166.246.129' # IP de la máquina virtual
-	#IP_VM = "127.0.0.1" # si falla la MV
-	buff_size = 4
+	#IP_VM = '10.166.246.129' # IP de la máquina virtual
+	IP_VM = "127.0.0.1" # si falla la MV
 	address = (IP_VM, 8000)
 
 	print("Creando socket - Servidor")
@@ -28,17 +28,41 @@ if __name__ == "__main__":
 	print("... Esperando clientes")
 
 	while True:
-		new_socket, new_socket_address = server_socket.accept()
+		new_socket, addr = server_socket.accept()
 
-		recv_message = recive_message(new_socket, buff_size)
+		recv_message: bytes = recive_message(new_socket)
+		if not recv_message.strip():
+			new_socket.close()
+			continue
+
 		http_hl = parse_HTTP_message(recv_message)
-		print(
-			" -> Se ha recibido el siguiente mensaje:\n"
-			f"{create_HTTP_message(http_hl).decode()}\n"
-			"---"
-		)
+		hostname = http_hl.head.get("Host")
+		if not hostname:
+			new_socket.close()
+			continue
 
-		#new_socket.send(HTTP_RESPONSE)
+		# Aqui es donde se intenta prohibir el acceso
+		if hostname in BLOCKED_DOMAINS:
+			start_line = http_hl.start_line.split(" ")
+			path = start_line[1] if len(start_line) > 1 else ""
 
+			if "/403.jpg" in path: new_socket.send(IMAGE_403)
+			else: new_socket.send(HTML_403)
+
+			new_socket.close()
+			print(f"conexión con {addr} bloqueada ({hostname}) y cerrada")
+			continue
+
+
+		http_hl.head["X-ElQuePregunta"] = USER
+
+		proxy_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+		proxy_socket.connect((hostname, 80))
+		proxy_socket.send(create_HTTP_message(http_hl))
+
+		response = recive_message(proxy_socket)
+		proxy_socket.close()
+
+		new_socket.send(response)
 		new_socket.close()
-		print(f"conexión con {new_socket_address} ha sido cerrada")
+		print(f"conexión con {addr} ha sido cerrada")
