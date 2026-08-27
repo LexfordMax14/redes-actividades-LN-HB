@@ -1,3 +1,4 @@
+import re
 import socket
 
 
@@ -84,4 +85,39 @@ def _get_content_length(head: bytes) -> int | None:
 			return int(value.strip())
 	return None
 
+def replace_forbidden_word(http_hl: Http_HL, reemplazos: list[dict[str, str]]) -> Http_HL:
+	texto = http_hl.body
+	mapa: dict[str, str] = {}
+	for d in reemplazos:
+		mapa.update(d)
 
+	if not mapa:
+		http_hl.body = texto
+		return http_hl
+
+	claves_ordenadas = sorted(mapa.keys(), key=len, reverse=True)
+
+	patron = r'\b(' + '|'.join(re.escape(clave) for clave in claves_ordenadas) + r')\b'
+	regex = re.compile(patron, re.IGNORECASE)
+
+	def _reemplazar(match: re.Match) -> str:
+		palabra_encontrada = match.group(0)
+		for clave in mapa:
+			if clave.lower() == palabra_encontrada.lower():
+				return mapa[clave]
+		return palabra_encontrada  # fallback (no debería ocurrir)
+
+	nuevo_body = regex.sub(_reemplazar, texto)
+	http_hl.body = nuevo_body
+
+	_actualizar_content_length(http_hl)
+
+	return http_hl
+
+
+def _actualizar_content_length(http_hl: Http_HL) -> None:
+	nuevo_length = str(len(http_hl.body.encode("utf-8")))
+	for key in http_hl.head:
+		if key.lower() == "content-length":
+			http_hl.head[key] = nuevo_length
+	http_hl.head["Content-Length"] = nuevo_length

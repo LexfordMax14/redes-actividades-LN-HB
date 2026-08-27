@@ -6,6 +6,7 @@ from parser import (
 	create_HTTP_message,
 	parse_HTTP_message,
 	recive_message,
+	replace_forbidden_word,
 )
 
 RULES = None
@@ -68,6 +69,7 @@ if __name__ == "__main__":
 		response = recive_message(proxy_socket)
 		proxy_socket.close()
 
-		new_socket.send(response)
+		response = replace_forbidden_word(parse_HTTP_message(response),  FORBIDDEN_WORDS)
+		new_socket.send(create_HTTP_message(response))
 		new_socket.close()
 		print(f"conexión con {addr} ha sido cerrada")
