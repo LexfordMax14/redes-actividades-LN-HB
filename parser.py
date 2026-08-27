@@ -86,6 +86,7 @@ def _get_content_length(head: bytes) -> int | None:
 	return None
 
 def replace_forbidden_word(http_hl: Http_HL, reemplazos: list[dict[str, str]]) -> Http_HL:
+	# TODO: solo se reemplaza el texto si se que tiene texto el HTTP
 	texto = http_hl.body
 	mapa: dict[str, str] = {}
 	for d in reemplazos:
