@@ -42,10 +42,17 @@ if __name__ == "__main__":
 			continue
 
 		# Aqui es donde se intenta prohibir el acceso
-		if hostname in BLOCKED_DOMAINS:
-			start_line = http_hl.start_line.split(" ")
-			path = start_line[1] if len(start_line) > 1 else ""
+		start_line = http_hl.start_line.split(" ")
+		path = start_line[1] if len(start_line) > 1 else ""
+		blocked_domain = False
+		for url in BLOCKED_DOMAINS:
+			print(url, path)
+			print(path in url)
+			if url in path:
+				blocked_domain = True
+				break
 
+		if blocked_domain:
 			if "/403.jpg" in path: new_socket.send(IMAGE_403)
 			else: new_socket.send(HTML_403)
 
