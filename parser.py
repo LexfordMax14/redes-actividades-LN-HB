@@ -53,20 +53,28 @@ def create_HTTP_message(parse_http: Http_HL) -> bytes:
 
 def recive_message(socket: socket.socket, buff_size: int = 4) -> bytes:
 	message = b""
+
 	while b"\r\n\r\n" not in message:
+
 		data = socket.recv(buff_size)
 		if not data:
 			break
+
 		message += data
 
-	head, _, _= message.partition(b"\r\n\r\n")
+	head, _, body = message.partition(b"\r\n\r\n")
 	content_length = _get_content_length(head)
 
-	if content_length is not None:
-		body = socket.recv(content_length)
-		return head + b"\r\n\r\n" + body
-	# else
-	return head + b"\r\n\r\n"
+	while content_length is not None and len(body) < content_length:
+
+		data = socket.recv(buff_size)
+
+		if not data:
+			break
+
+		body += data
+
+	return head + b"\r\n\r\n" + body
 
 
 def _get_content_length(head: bytes) -> int | None:
