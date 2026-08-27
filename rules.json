@@ -2,8 +2,7 @@
 	"user": "HL",
 	"blocked": [
 		"www.dcc.uchile.cl",
-		"cc4303.bachmann.cl/secret",
-		"cc4303.bachmann.cl"
+		"cc4303.bachmann.cl/secret"
 	],
 	"forbidden_words": [
 		{

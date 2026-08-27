@@ -46,8 +46,6 @@ if __name__ == "__main__":
 		path = start_line[1] if len(start_line) > 1 else ""
 		blocked_domain = False
 		for url in BLOCKED_DOMAINS:
-			print(url, path)
-			print(path in url)
 			if url in path:
 				blocked_domain = True
 				break
