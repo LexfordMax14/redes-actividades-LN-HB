@@ -2,6 +2,8 @@
 
 **Integrantes:** Hector Bonilla V, Lázaro Narváez U
 
+**Repositorio:** https://github.com/LexfordMax14/redes-actividades-LN-HB
+
 ---
 
 ## 1. Declaración de uso de IA
@@ -77,12 +79,14 @@ Decisiones:
 - **`/403.jpg` se intercepta ANTES del chequeo de bloqueo.** Es un recurso local, no del servidor remoto; si se chequeara después, el proxy iría a buscarlo afuera y devolvería 404.
 
 **¿Cuántos ciclos HTTP para mostrar una imagen en un navegador?**
-[COMPLETAR: cuenta las líneas del log del proxy al cargar la página de 403 — cada `conexión ... cerrada` es un ciclo]
+
+Dos: uno para el HTML y otro para la imagen. El navegador no puede saber que hay una imagen hasta recibir y parsear el HTML, así que las peticiones son necesariamente secuenciales y no se pueden juntar en una sola.
 
 ### 4.3 Reemplazo de palabras
 
 - Se recorre `forbidden_words` (una **lista de diccionarios** de un par cada uno) y se aplica `bytes.replace()` por cada par.
 - Los reemplazos son acumulativos: cada vuelta trabaja sobre el resultado de la anterior.
+- **Sin regex**: el enunciado solo permite `socket`, `json` y `sys`. `str.replace()` basta porque las claves del JSON no se solapan entre sí y coinciden en mayúsculas con el contenido de las páginas del curso. Un enfoque case-insensitive habría requerido `re`.
 - Tras reemplazar se **recalcula `Content-Length`**: el body cambia de tamaño (`proxy` = 5 bytes, `[REDACTED]` = 10). Con el body en `bytes` es `len(body)` directo — importa que sea el largo en bytes y no en caracteres, porque las páginas tienen tildes.
 
 ### 4.4 Modificación de headers
@@ -136,14 +140,14 @@ En los 4 casos el body llega completo y coincide con `Content-Length`.
 
 ### 5.3 Con el navegador
 
-- `http://cc4303.bachmann.cl/secret`
+- `http://cc4303.bachmann.cl/secret` — ya no se ve el contenido del sitio: el proxy responde 403 y el navegador muestra la imagen alojada localmente. Se observan dos ciclos HTTP en el log: uno por el HTML, otro por la imagen.
 
 ![/secret](secret.png)
 
-- `http://cc4303.bachmann.cl/`
+- `http://cc4303.bachmann.cl/` — el título muestra `Bienvenide HL!`, valor que el servidor toma del header `X-ElQuePregunta` agregado por el proxy. El enlace también aparece censurado.
 
 ![/root](root.png)
 
-- `http://cc4303.bachmann.cl/replace`
+- `http://cc4303.bachmann.cl/replace` — el texto es el mismo que sin proxy, solo con las palabras prohibidas reemplazadas. No hay cortes ni caracteres rotos: las tildes se conservan porque el `Content-Length` se recalcula en bytes. El `<title>` de la pestaña también queda censurado.
 
 ![/replace](replace.png)
