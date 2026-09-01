@@ -49,6 +49,7 @@ if __name__ == "__main__":
 		if "/403.jpg" in path:
 			new_socket.send(IMAGE_403)
 			new_socket.close()
+			print(f"conexión con {addr}: imagen 403 servida localmente")
 			continue
 
 		blocked_domain = False
