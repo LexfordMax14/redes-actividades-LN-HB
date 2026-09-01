@@ -54,6 +54,12 @@ Idea central: un proxy es servidor y cliente a la vez. Recibe con `accept()` y p
 
 ## 4. Diseño
 
+### 4.0 Arquitectura
+
+**Separación en dos archivos.** Aplicamos separación de responsabilidades, criterio traído del ramo de Ingeniería de Software: `parser.py` concentra el manejo del protocolo HTTP (leer del socket, interpretar y armar mensajes), y `tcp_socket_server.py` la lógica del proxy (a quién conectarse, qué bloquear, qué censurar). El servidor no sabe cómo se parsea un header; el parser no sabe qué es un dominio bloqueado.
+
+**Clase `Http_HL` en vez de diccionario o tupla.** Se eligió una clase para que el editor respetara las firmas y autocompletara los campos. Además entrega una estructura fija con la que trabajar: `start_line`, `head` y `body` siempre existen y siempre tienen el mismo tipo, lo que evita chequeos defensivos en el resto del código.
+
 ### 4.1 `parse_HTTP_message` — qué extrae
 
 Separa el mensaje en tres partes, en `\r\n\r\n`:
@@ -75,8 +81,11 @@ Decisiones:
 
 - Se compara la lista `blocked` del JSON contra el path de la start line.
 - Al usar el proxy, el cliente manda la **URL completa** en la start line (`GET http://host/ruta`), no solo la ruta. Por eso una entrada como `cc4303.bachmann.cl/secret` calza.
+- **Por qué contra el path y no contra el header `Host`.** La primera versión comparaba `Host` contra la lista, pero el `Host` trae solo el dominio (`cc4303.bachmann.cl`), nunca la ruta. Con esa lógica una entrada como `cc4303.bachmann.cl/secret` no podía calzar jamás, y la única forma de bloquear `/secret` era bloquear el dominio entero — lo que también dejaba fuera `/` y `/replace`. Comparar contra el path resuelve las dos cosas.
+- **La comparación es por substring, no por igualdad** (`if url in path`). Esto es deliberado: si una página está bloqueada, las rutas colgadas de ella (`/secret/algo`) también deben estarlo. Como efecto lateral se bloquean rutas que solo comparten prefijo sin ser subrutas (`/secretos-publicos`); se aceptó porque en un control parental bloquear de más es preferible a bloquear de menos.
 - Bloqueado → se responde `403 Forbidden` con un HTML que incluye `<img src="/403.jpg">`.
 - **`/403.jpg` se intercepta ANTES del chequeo de bloqueo.** Es un recurso local, no del servidor remoto; si se chequeara después, el proxy iría a buscarlo afuera y devolvería 404.
+- **La imagen se sirve con `200 OK`, no con `403`.** El recurso prohibido es la página, no la imagen. El 403 corresponde a la respuesta del HTML bloqueado; la petición posterior de `/403.jpg` es legítima y el proxy la satisface localmente.
 
 **¿Cuántos ciclos HTTP para mostrar una imagen en un navegador?**
 
@@ -110,6 +119,8 @@ Por `Content-Length`. Se lee hasta que `len(body)` alcance ese valor.
 Dos criterios combinados: delimitador para el head, `Content-Length` para el body.
 
 Detalle clave: un mismo `recv` puede traer el final del head **y** el inicio del body. Ese sobrante se conserva y se cuenta en `len(body)`; descartarlo hace que el proxy pida bytes de más y se cuelgue.
+
+**Por qué `buff_size = 4` por defecto** (y no el 50 que sugiere el enunciado): para forzar el peor caso en cada ejecución. Con buffers grandes los errores de lectura no se manifiestan. Durante el desarrollo nos encontramos justamente con el caso descrito arriba —un `recv` que traía head más un pedazo de body, y ese sobrante se perdía—, y con 50 ese efecto podría no haber aparecido nunca.
 
 ---
 
