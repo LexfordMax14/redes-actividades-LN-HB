@@ -106,7 +106,7 @@ de \texttt{str} a \texttt{bytes}. Ejecución de las pruebas contra el servidor d
 Estructura de este informe. \\
 \addlinespace
 Claude (Sonnet) & Héctor & Consulta sobre el significado de \texttt{b""} en sockets durante la
-depuración de un error. Revisión de código. \\
+depuración de un error (la cual cierra sockets). Revisión de código. \\
 \bottomrule
 \end{tabularx}
 
@@ -228,12 +228,6 @@ la petición sigue por el camino normal hacia el servidor.
         parental resulta preferible bloquear de más que de menos.
   \item \textbf{Respuesta ante una URL bloqueada.} El proxy devuelve \texttt{403 Forbidden} junto a
         un HTML que incluye la etiqueta \texttt{<img src="/403.jpg">}.
-  \item \textbf{La ruta \texttt{/403.jpg} se intercepta antes del chequeo de bloqueo.} La imagen es
-        un recurso local y no del servidor remoto. Si se evaluara después, el proxy la buscaría
-        afuera y obtendría un 404.
-  \item \textbf{La imagen se sirve con \texttt{200 OK} y no con \texttt{403}.} El recurso prohibido
-        es la página y no la imagen. El 403 corresponde al HTML bloqueado, mientras que la petición
-        posterior de \texttt{/403.jpg} es legítima y el proxy la satisface localmente.
 \end{itemize}
 
 \noindent\textbf{¿Cuántos ciclos HTTP se necesitan para mostrar una imagen en un navegador?}
@@ -250,11 +244,6 @@ aplica \texttt{bytes.replace()} sobre el body por cada par. Los reemplazos son a
 cada iteración opera sobre el resultado de la anterior.
 
 \begin{itemize}
-  \item \textbf{No se utiliza \texttt{re}.} El enunciado permite únicamente \texttt{socket},
-        \texttt{json} y \texttt{sys}. El método \texttt{replace()} resulta suficiente porque las
-        claves del JSON no se solapan entre sí y coinciden en mayúsculas con el contenido de las
-        páginas del curso. Un enfoque insensible a mayúsculas habría requerido expresiones
-        regulares.
   \item \textbf{Se recalcula \texttt{Content-Length} tras cada reemplazo.} El body cambia de tamaño
         porque \texttt{proxy} ocupa 5 bytes y \texttt{[REDACTED]} ocupa 10. Como el body se
         almacena en \texttt{bytes}, el nuevo valor es simplemente \texttt{len(body)}. El largo debe
